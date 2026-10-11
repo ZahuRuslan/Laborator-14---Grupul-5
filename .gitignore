@@ -1,0 +1,13 @@
+# Notele create de utilizatori
+/note/*
+!/note/.gitkeep
+
+# Fișiere temporare
+*.tmp
+*.log
+
+# Configurări locale
+.env
+.vscode/
+.DS_Store
+Thumbs.db
