@@ -1,237 +1,151 @@
 <?php
-require_once __DIR__ . '/functions.php';
+    $note = [];
+    $eroare = '';
 
-$notes = getNotes();
-$id = $_GET['id'] ?? '';
-$selectedNote = null;
-$content = '';
-$title = '';
-
-if (is_string($id) && $id !== '') {
-    $path = getNotePath($id);
-
-    if ($path !== null && is_file($path)) {
-        $selectedNote = [
-            'id' => $id,
-            'title' => getNoteTitle($path),
-        ];
-
-        $title = $selectedNote['title'];
-        $content = file_get_contents($path);
-
-        if ($content === false) {
-            $content = '';
-            $error = 'Nota nu a putut fi citită.';
-        }
+    if (!is_dir('note') && !mkdir('note')) {
+        $eroare = 'Directorul note nu a putut fi creat.';
     }
-}
 
-$error = $error ?? '';
-$message = $_GET['message'] ?? '';
+    $fisiere = is_dir('note') ? scandir('note') : [];
+
+    foreach ($fisiere as $fisier) {
+        if (pathinfo($fisier, PATHINFO_EXTENSION) !== 'txt') {
+            continue;
+        }
+
+        $continut = file_get_contents('note/' . $fisier);
+        if ($continut === false) {
+            $eroare = 'Unele note nu au putut fi citite.';
+            continue;
+        }
+
+        $note[] = [
+            'titlu'    => pathinfo($fisier, PATHINFO_FILENAME),
+            'continut' => $continut,
+            'data'     => filemtime('note/' . $fisier),
+        ];
+    }
+
+    // cele mai noi primele
+    usort($note, function ($a, $b) {
+        return $b['data'] - $a['data'];
+    });
 ?>
 <!DOCTYPE html>
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notepad Online</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+    <title>Notepad online</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="assets/style.css">
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen">
+<body class="min-h-screen bg-slate-100 text-slate-800">
 
-<div class="min-h-screen md:flex">
+    <header class="border-b border-slate-200 bg-white">
+        <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-5">
+            <h1 class="text-2xl font-bold text-indigo-600">Notepad online</h1>
+            <span class="text-sm text-slate-500"><?= count($note); ?> notițe</span>
+        </div>
+    </header>
 
-    <aside class="bg-slate-900 text-white p-6 md:w-80 md:min-h-screen">
-        <div class="flex items-center gap-3 mb-8">
-            <div class="bg-indigo-500 rounded-xl p-3 text-xl">✎</div>
-            <div>
-                <h1 class="text-xl font-bold">Notepad Online</h1>
-                <p class="text-slate-400 text-sm">Notele tale, într-un singur loc</p>
-            </div>
+    <main class="mx-auto max-w-5xl px-4 py-6">
+
+        <?php if ($eroare !== ''): ?>
+            <div class="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-medium text-red-800"><?= $eroare; ?></div>
+        <?php endif; ?>
+
+        <!-- Căutare live + buton notă nouă -->
+        <div class="mb-6 flex flex-col gap-3 sm:flex-row">
+            <form class="flex-1" onsubmit="return false;">
+                <input type="search" id="cautare" placeholder="Caută notă după titlu..."
+                       class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </form>
+            <button id="btn-nou" type="button"
+                    class="rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white transition hover:bg-indigo-700">
+                + Notă nouă
+            </button>
         </div>
 
-        <a href="index.php"
-           class="block w-full text-center bg-indigo-500 hover:bg-indigo-600 rounded-xl py-3 px-4 font-semibold mb-6">
-            + Notă nouă
-        </a>
-
-        <label for="search" class="block text-sm text-slate-300 mb-2">
-            Caută după titlu
-        </label>
-
-        <input
-            type="search"
-            id="search"
-            placeholder="Caută o notă..."
-            class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 mb-6 text-white outline-none focus:ring-2 focus:ring-indigo-500"
-        >
-
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="font-semibold">Notele mele</h2>
-            <span class="text-xs bg-slate-700 rounded-full px-3 py-1">
-                <?= count($notes) ?>
-            </span>
-        </div>
-
-        <div id="notes-list" class="space-y-2">
-            <?php foreach ($notes as $note): ?>
-                <a
-                    href="index.php?id=<?= urlencode($note['id']) ?>"
-                    data-title="<?= escapeHtml(mb_strtolower($note['title'])) ?>"
-                    class="note-item block p-3 rounded-xl hover:bg-slate-800 transition
-                    <?= ($selectedNote && $selectedNote['id'] === $note['id'])
-                        ? 'bg-slate-800 border border-indigo-400'
-                        : '' ?>"
-                >
-                    <div class="font-medium truncate">
-                        <?= escapeHtml($note['title']) ?>
-                    </div>
-                    <div class="text-xs text-slate-400 mt-1">
-                        <?= date('d.m.Y H:i', $note['updated']) ?>
-                    </div>
-                </a>
-            <?php endforeach; ?>
-
-            <?php if (empty($notes)): ?>
-                <p class="text-sm text-slate-400" id="empty-notes">
-                    Nu ai încă nicio notă. Creează prima notă!
-                </p>
-            <?php endif; ?>
-
-            <p id="no-results" class="hidden text-sm text-slate-400">
-                Nu s-au găsit note.
-            </p>
-        </div>
-    </aside>
-
-    <main class="flex-1 p-4 md:p-10">
-        <div class="max-w-5xl mx-auto">
-
-            <header class="flex flex-wrap justify-between items-center gap-4 mb-8">
-                <div>
-                    <h2 class="text-2xl md:text-3xl font-bold">
-                        <?= $selectedNote ? 'Editează nota' : 'Creează o notă' ?>
-                    </h2>
-                    <p class="text-slate-500 mt-1">
-                        Scrie ideile tale și salvează-le ca fișiere text.
+        <!-- Lista notelor -->
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <?php foreach ($note as $n): ?>
+                <?php
+                $titluSigur = htmlspecialchars($n['titlu'], ENT_QUOTES, 'UTF-8');
+                $continutSigur = htmlspecialchars($n['continut'], ENT_QUOTES, 'UTF-8');
+                $preview = htmlspecialchars(mb_substr($n['continut'], 0, 140), ENT_QUOTES, 'UTF-8');
+                ?>
+                <article class="note-card flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                         data-titlu="<?= strtolower($titluSigur); ?>">
+                    <h2 class="truncate text-lg font-semibold"><?= $titluSigur; ?></h2>
+                    <p class="mb-2 text-xs text-slate-400">
+                        <?= date('d.m.Y H:i', $n['data']); ?> · <?= mb_strlen($n['continut']); ?> caractere
                     </p>
-                </div>
-
-                <span class="text-sm bg-white rounded-full px-4 py-2 shadow-sm">
-                    Fișiere .txt
-                </span>
-            </header>
-
-            <?php if ($error !== ''): ?>
-                <div class="bg-red-100 text-red-700 rounded-xl p-4 mb-5">
-                    <?= escapeHtml($error) ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($message === 'saved'): ?>
-                <div class="bg-green-100 text-green-800 rounded-xl p-4 mb-5">
-                    Nota a fost salvată cu succes!
-                </div>
-            <?php elseif ($message === 'deleted'): ?>
-                <div class="bg-green-100 text-green-800 rounded-xl p-4 mb-5">
-                    Nota a fost ștearsă.
-                </div>
-            <?php endif; ?>
-
-            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <form action="save.php" method="POST" id="note-form">
-                    <input type="hidden" name="csrf_token"
-                           value="<?= escapeHtml($_SESSION['csrf_token']) ?>">
-
-                    <input type="hidden" name="id"
-                           value="<?= escapeHtml($selectedNote['id'] ?? '') ?>">
-
-                    <div class="p-5 border-b border-slate-200">
-                        <label for="title" class="block font-semibold mb-2">
-                            Titlul notei
-                        </label>
-                        <input
-                            type="text"
-                            name="title"
-                            id="title"
-                            maxlength="60"
-                            required
-                            value="<?= escapeHtml($title) ?>"
-                            placeholder="Exemplu: Ideile mele"
-                            class="w-full border border-slate-300 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
-                        >
+                    <p class="flex-1 whitespace-pre-line break-words text-sm text-slate-600"><?= $preview; ?></p>
+                    <div class="mt-4 flex gap-2 text-sm">
+                        <button type="button"
+                                class="btn-editeaza rounded-md bg-amber-100 px-3 py-1 font-medium text-amber-800 hover:bg-amber-200"
+                                data-titlu="<?= $titluSigur; ?>"
+                                data-continut="<?= $continutSigur; ?>">Editează</button>
+                        <a href="download.php?file=<?= rawurlencode($n['titlu'] . '.txt'); ?>"
+                           class="rounded-md bg-sky-100 px-3 py-1 font-medium text-sky-800 hover:bg-sky-200">Descarcă</a>
+                        <button type="button"
+                                class="btn-sterge rounded-md bg-red-100 px-3 py-1 font-medium text-red-800 hover:bg-red-200"
+                                data-titlu="<?= $titluSigur; ?>">Șterge</button>
                     </div>
-
-                    <div class="p-5">
-                        <div class="flex justify-between items-center mb-3 gap-3">
-                            <label for="content" class="font-semibold">
-                                Conținut
-                            </label>
-                            <span class="text-sm text-slate-500">
-                                <span id="char-count"><?= mb_strlen($content) ?></span>/10.000
-                            </span>
-                        </div>
-
-                        <textarea
-                            name="content"
-                            id="content"
-                            rows="16"
-                            maxlength="10000"
-                            required
-                            placeholder="Începe să scrii aici..."
-                            class="w-full resize-y border border-slate-300 rounded-xl p-4 outline-none focus:ring-2 focus:ring-indigo-500 editor"
-                        ><?= escapeHtml($content) ?></textarea>
-
-                        <p id="limit-warning" class="hidden text-sm text-red-600 mt-2">
-                            Ai atins limita de 10.000 de caractere.
-                        </p>
-                    </div>
-
-                    <div class="bg-slate-50 border-t border-slate-200 p-5 flex flex-wrap gap-3">
-                        <button
-                            type="submit"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 py-3 font-semibold"
-                        >
-                            Salvează nota
-                        </button>
-
-                        <a href="index.php"
-                           class="bg-white border border-slate-300 hover:bg-slate-100 rounded-xl px-6 py-3 font-semibold">
-                            Notă nouă
-                        </a>
-                    </div>
-                </form>
-            </section>
-
-            <?php if ($selectedNote): ?>
-                <section class="mt-5 flex flex-wrap gap-3">
-                    <a href="download.php?id=<?= urlencode($selectedNote['id']) ?>"
-                       class="bg-white border border-slate-300 hover:bg-slate-50 rounded-xl px-5 py-3 font-medium">
-                        ↓ Descarcă .txt
-                    </a>
-
-                    <button type="button" id="delete-button"
-                            class="bg-red-50 text-red-700 hover:bg-red-100 rounded-xl px-5 py-3 font-medium">
-                        Șterge nota
-                    </button>
-
-                    <form action="delete.php" method="POST" id="delete-form" class="hidden">
-                        <input type="hidden" name="csrf_token"
-                               value="<?= escapeHtml($_SESSION['csrf_token']) ?>">
-                        <input type="hidden" name="id"
-                               value="<?= escapeHtml($selectedNote['id']) ?>">
-                    </form>
-                </section>
-            <?php endif; ?>
-
-            <p class="text-center text-sm text-slate-400 mt-8">
-                Notepad Online · Grupul 5
-            </p>
+                </article>
+            <?php endforeach; ?>
         </div>
-    </main>
-</div>
 
-<script src="script.js"></script>
+        <p id="gol" class="<?= empty($note) ? '' : 'hidden'; ?> py-12 text-center text-slate-500">
+            Nu există nicio notă. Apasă „Notă nouă” pentru a crea una.
+        </p>
+    </main>
+
+    <!-- Fereastra modală: notă nouă / editare -->
+    <div id="modal-nota" class="modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+            <h2 id="titlu-modal" class="mb-4 text-xl font-bold">Notă nouă</h2>
+            <form action="save.php" method="post">
+                <input type="hidden" name="original" id="original" value="">
+
+                <label for="titlu" class="mb-1 block text-sm font-medium">Titlu</label>
+                <input type="text" name="titlu" id="titlu" required maxlength="50"
+                       pattern="[A-Za-z0-9_\-]+"
+                       placeholder="litere, cifre, _ și -"
+                       class="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+
+                <label for="continut" class="mb-1 block text-sm font-medium">Conținut</label>
+                <textarea name="continut" id="continut" rows="12" maxlength="10000"
+                          placeholder="Scrie nota aici..."
+                          class="editor w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+                <p class="mt-1 text-right text-xs text-slate-500"><span id="contor">0</span> / 10000 caractere</p>
+
+                <div class="mt-4 flex justify-end gap-2">
+                    <button type="button" class="btn-inchide rounded-lg bg-slate-200 px-4 py-2 font-medium hover:bg-slate-300">Anulează</button>
+                    <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Salvează</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Fereastra modală: confirmare ștergere -->
+    <div id="modal-stergere" class="modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+        <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 class="mb-2 text-xl font-bold">Ștergi nota?</h2>
+            <p class="mb-4 text-sm text-slate-600">
+                Nota „<strong id="stergere-nume"></strong>” va fi ștearsă definitiv.
+            </p>
+            <form action="delete.php" method="post">
+                <input type="hidden" name="file" id="stergere-fisier" value="">
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="btn-inchide rounded-lg bg-slate-200 px-4 py-2 font-medium hover:bg-slate-300">Anulează</button>
+                    <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700">Șterge</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="assets/script.js"></script>
 </body>
 </html>

@@ -1,0 +1,29 @@
+body {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.editor {
+    min-height: 260px;
+    line-height: 1.7;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 15px;
+    resize: vertical;
+}
+
+.note-card {
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.note-card:hover {
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+    transform: translateY(-2px);
+}
+
+.modal {
+    animation: aparitie 0.15s ease;
+}
+
+@keyframes aparitie {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}

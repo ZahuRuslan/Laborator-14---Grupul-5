@@ -1,71 +1,80 @@
 <?php
-require_once __DIR__ . '/functions.php';
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    exit('Metodă nepermisă.');
-}
-
-verifyCsrf();
-
-$title = trim($_POST['title'] ?? '');
-$content = $_POST['content'] ?? '';
-$id = $_POST['id'] ?? '';
-
-if (!is_string($title) || !is_string($content) || !is_string($id)) {
-    exit('Date invalide.');
-}
-
-if ($title === '' || mb_strlen($title) > 60) {
-    exit('Titlul este obligatoriu și trebuie să aibă maximum 60 de caractere.');
-}
-
-if (mb_strlen($content) > 10000) {
-    exit('Nota nu poate depăși 10.000 de caractere.');
-}
-
-if (trim($content) === '') {
-    exit('Conținutul notei nu poate fi gol.');
-}
-
-if ($id !== '' && !validId($id)) {
-    http_response_code(400);
-    exit('Identificator invalid.');
-}
-
-$oldPath = null;
-
-if ($id !== '') {
-    $oldPath = getNotePath($id);
-
-    if ($oldPath === null) {
-        http_response_code(404);
-        exit('Nota nu a fost găsită.');
-    }
-} else {
-    $id = bin2hex(random_bytes(6));
-}
-
-$slug = createSlug($title);
-$newPath = NOTES_DIR . $slug . '-' . $id . '.txt';
-
-if ($oldPath !== null && $oldPath !== $newPath) {
-    if (file_exists($newPath)) {
-        http_response_code(409);
-        exit('Există deja un fișier cu acest nume.');
+    function afiseazaEroare(string $mesaj)
+    {
+        http_response_code(400);
+        $mesajSigur = htmlspecialchars($mesaj, ENT_QUOTES, 'UTF-8');
+        ?>
+        <!DOCTYPE html>
+        <html lang="ro">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Eroare</title>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+        </head>
+        <body class="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6 text-gray-900">
+            <main class="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+                <h1 class="text-xl font-bold">Nota nu a putut fi salvată</h1>
+                <p class="mt-2 text-sm text-gray-600"><?= $mesajSigur; ?></p>
+                <a href="index.php" class="mt-4 inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                    Înapoi la note
+                </a>
+            </main>
+        </body>
+        </html>
+        <?php
+        exit;
     }
 
-    if (!rename($oldPath, $newPath)) {
-        http_response_code(500);
-        exit('Nu s-a putut actualiza numele fișierului.');
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: index.php');
+        exit;
     }
-}
 
-$result = file_put_contents($newPath, $content, LOCK_EX);
+    $titlu = isset($_POST['titlu']) ? trim($_POST['titlu']) : '';
+    $original = isset($_POST['original']) ? trim($_POST['original']) : '';
+    $continut = isset($_POST['continut']) ? $_POST['continut'] : '';
+    $continut = str_replace("\r\n", "\n", $continut);
 
-if ($result === false) {
-    http_response_code(500);
-    exit('Eroare la salvarea notei. Verifică permisiunile directorului note.');
-}
+    // titlul devine numele fișierului: doar litere, cifre, _ și -
+    if (!preg_match('/^[A-Za-z0-9_-]{1,50}$/', $titlu)) {
+        afiseazaEroare("Titlul poate avea 1-50 de caractere: litere, cifre, _ sau -.");
+    }
+    if ($original !== '' && !preg_match('/^[A-Za-z0-9_-]{1,50}$/', $original)) {
+        afiseazaEroare("Nota care se editează este invalidă.");
+    }
 
-redirectTo('index.php?id=' . urlencode($id) . '&message=saved');
+    // limita de dimensiune
+    if (mb_strlen($continut) > 10000) {
+        afiseazaEroare("Nota depășește limita de 10.000 de caractere.");
+    }
+
+    // prevenirea injecției de cod: fără tag-uri HTML / PHP
+    if ($continut !== strip_tags($continut)) {
+        afiseazaEroare("Nota nu poate conține tag-uri HTML sau cod PHP.");
+    }
+
+    if (!is_dir('note') && !mkdir('note')) {
+        afiseazaEroare("Directorul note nu a putut fi creat.");
+    }
+
+    $cale = 'note/' . $titlu . '.txt';
+    $caleVeche = 'note/' . $original . '.txt';
+
+    // nu suprascriem altă notă cu același titlu
+    if (file_exists($cale) && $titlu !== $original) {
+        afiseazaEroare("Există deja o notă cu acest titlu.");
+    }
+
+    if (file_put_contents($cale, $continut) === false) {
+        afiseazaEroare("Eroare la scrierea fișierului. Încercați din nou.");
+    }
+
+    // dacă la editare s-a schimbat titlul, ștergem fișierul vechi
+    if ($original !== '' && $original !== $titlu && is_file($caleVeche)) {
+        unlink($caleVeche);
+    }
+
+    header('Location: index.php');
+    exit;
+?>
