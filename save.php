@@ -10,7 +10,7 @@
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Eroare</title>
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+            <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
         </head>
         <body class="flex min-h-screen items-center justify-center bg-gray-100 px-4 py-6 text-gray-900">
             <main class="w-full max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
