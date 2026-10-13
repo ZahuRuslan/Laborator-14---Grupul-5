@@ -24,7 +24,6 @@ function actualizeazaContor() {
     contor.textContent = continutInput.value.length;
 }
 
-// Notă nouă
 document.getElementById('btn-nou').onclick = function () {
     document.getElementById('titlu-modal').textContent = 'Notă nouă';
     originalInput.value = '';
@@ -34,7 +33,7 @@ document.getElementById('btn-nou').onclick = function () {
     deschide(modalNota);
 };
 
-// Editare
+// Aici editam nota noastra 
 document.querySelectorAll('.btn-editeaza').forEach(function (buton) {
     buton.onclick = function () {
         document.getElementById('titlu-modal').textContent = 'Editează nota';
@@ -46,7 +45,7 @@ document.querySelectorAll('.btn-editeaza').forEach(function (buton) {
     };
 });
 
-// Ștergere (cu confirmare)
+// Aici stergem nota si comfirma daca dorim sau nu
 document.querySelectorAll('.btn-sterge').forEach(function (buton) {
     buton.onclick = function () {
         document.getElementById('stergere-nume').textContent = buton.dataset.titlu;
@@ -55,7 +54,7 @@ document.querySelectorAll('.btn-sterge').forEach(function (buton) {
     };
 });
 
-// Anulează, click pe fundal, tasta Escape
+
 document.querySelectorAll('.btn-inchide').forEach(function (buton) {
     buton.onclick = inchideTot;
 });
@@ -74,7 +73,7 @@ document.onkeydown = function (e) {
 
 continutInput.oninput = actualizeazaContor;
 
-// Căutare live după titlu (fără Enter)
+// Aici cautam in bara de cautare nota noastra
 const cautare = document.getElementById('cautare');
 const carduri = document.querySelectorAll('.note-card');
 const gol = document.getElementById('gol');

@@ -36,7 +36,7 @@
     $continut = isset($_POST['continut']) ? $_POST['continut'] : '';
     $continut = str_replace("\r\n", "\n", $continut);
 
-    // titlul devine numele fișierului: doar litere, cifre, _ și -
+    // Aici este asta ca daca titlul devine numele fisierului :doar cu litere ,cifre _ si -
     if (!preg_match('/^[A-Za-z0-9_-]{1,50}$/', $titlu)) {
         afiseazaEroare("Titlul poate avea 1-50 de caractere: litere, cifre, _ sau -.");
     }
@@ -44,12 +44,12 @@
         afiseazaEroare("Nota care se editează este invalidă.");
     }
 
-    // limita de dimensiune
+    
     if (mb_strlen($continut) > 10000) {
         afiseazaEroare("Nota depășește limita de 10.000 de caractere.");
     }
 
-    // prevenirea injecției de cod: fără tag-uri HTML / PHP
+    // Aici am pus linie de cod pentru prevenire injectiei de cod
     if ($continut !== strip_tags($continut)) {
         afiseazaEroare("Nota nu poate conține tag-uri HTML sau cod PHP.");
     }
@@ -61,7 +61,7 @@
     $cale = 'note/' . $titlu . '.txt';
     $caleVeche = 'note/' . $original . '.txt';
 
-    // nu suprascriem altă notă cu același titlu
+    // Aici am pus sa nu suprascriem un alt titlu cu cel original
     if (file_exists($cale) && $titlu !== $original) {
         afiseazaEroare("Există deja o notă cu acest titlu.");
     }
@@ -70,7 +70,7 @@
         afiseazaEroare("Eroare la scrierea fișierului. Încercați din nou.");
     }
 
-    // dacă la editare s-a schimbat titlul, ștergem fișierul vechi
+    // Aici am pus daca la editare se schimba titlul o sa stearga fisierul vechi
     if ($original !== '' && $original !== $titlu && is_file($caleVeche)) {
         unlink($caleVeche);
     }

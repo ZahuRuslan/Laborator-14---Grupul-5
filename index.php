@@ -26,7 +26,7 @@
         ];
     }
 
-    // cele mai noi primele
+    // Aici primele note adaugate vor fi cele noi
     usort($note, function ($a, $b) {
         return $b['data'] - $a['data'];
     });
@@ -55,7 +55,7 @@
             <div class="mb-4 rounded-lg bg-red-100 px-4 py-3 text-sm font-medium text-red-800"><?= $eroare; ?></div>
         <?php endif; ?>
 
-        <!-- Căutare live + buton notă nouă -->
+        
         <div class="mb-6 flex flex-col gap-3 sm:flex-row">
             <form class="flex-1" onsubmit="return false;">
                 <input type="search" id="cautare" placeholder="Caută notă după titlu..."
@@ -67,7 +67,7 @@
             </button>
         </div>
 
-        <!-- Lista notelor -->
+       
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <?php foreach ($note as $n): ?>
                 <?php
@@ -102,7 +102,7 @@
         </p>
     </main>
 
-    <!-- Fereastra modală: notă nouă / editare -->
+  
     <div id="modal-nota" class="modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
         <div class="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
             <h2 id="titlu-modal" class="mb-4 text-xl font-bold">Notă nouă</h2>
@@ -129,7 +129,7 @@
         </div>
     </div>
 
-    <!-- Fereastra modală: confirmare ștergere -->
+    
     <div id="modal-stergere" class="modal fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
         <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
             <h2 class="mb-2 text-xl font-bold">Ștergi nota?</h2>
